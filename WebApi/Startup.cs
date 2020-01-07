@@ -84,9 +84,7 @@ namespace WebApi
 
 
             //Dependency
-            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            services.AddScoped(typeof(IStoreRepository<>), typeof(StoreRepository<>));
-            services.AddTransient<IStoreService, StoreService>();
+            services.AddTransient<IStoreRepository, StoreRepository>();
 
 
 

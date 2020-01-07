@@ -8,56 +8,57 @@ using System.Text;
 
 namespace OA.Repository.Repository
 {
-    public class StoreRepository<T> : IStoreRepository<T> where T : Store
+    public class StoreRepository : IStoreRepository
     {
         private readonly ApplicationContext context;
-        private DbSet<T> entities;
+        private DbSet<Store> entities;
         public StoreRepository(ApplicationContext context)
         {
             this.context = context;
-            entities = context.Set<T>();
+
+            entities = context.Set<Store>();
         }
 
-        public IEnumerable<T> GetAll()
+        public IEnumerable<Store> GetAll()
         {
-            return entities.Where(e => e.IsDeleted == false).AsEnumerable();
+            return entities.Where(e => e.IsActive == true).AsEnumerable().ToList();
         }
 
-        public T Get(int id)
+        public Store Get(int id)
         {
-            return entities.SingleOrDefault(e => e.Id == id && e.IsDeleted == false);
+            return entities.SingleOrDefault(e => e.Id == id && e.IsActive == true);
         }
 
-        public void Insert(T entity)
+        public void Insert(Store model)
         {
-            if (entity == null)
+            if (model == null)
             {
-                throw new ArgumentNullException("entity");
+                throw new ArgumentNullException("store");
             }
-            entities.Add(entity);
+            entities.Add(model);
             context.SaveChanges();
         }
-        public void Update(T entity)
+        public void Update(Store model)
         {
-            if (entity == null)
+            if (model == null)
             {
-                throw new ArgumentNullException("entity");
+                throw new ArgumentNullException("store");
             }
-            context.Update(entity);
+            context.Update(model);
             context.SaveChanges();
         }
-        public void Delete(T entity)
+        public void Delete(Store model)
         {
-            if (entity == null)
+            if (model == null)
             {
-                throw new ArgumentNullException("entity");
+                throw new ArgumentNullException("store");
             }
-            context.Remove(entity);
+            context.Remove(model);
             context.SaveChanges();
         }
-        public void Remove(T entity)
+        public void Remove(Store model)
         {
-            context.Remove(entity);
+            context.Remove(model);
         }
 
         public void SaveChanges()

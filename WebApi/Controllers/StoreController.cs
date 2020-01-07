@@ -5,8 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OA.Data;
-using OA.Service.Interfaces;
-using WebApi.Models;
+using OA.Repository.Interfaces;
 
 namespace WebApi.Controllers
 {
@@ -14,163 +13,131 @@ namespace WebApi.Controllers
     [ApiController]
     public class StoreController : ControllerBase
     {
-        private readonly IStoreService _storeService;
+        private readonly IStoreRepository _storeRepository;
 
-        public StoreController(IStoreService storeService)
+        public StoreController(IStoreRepository storeRepository)
         {
-            _storeService = storeService;
+            _storeRepository = storeRepository;
         }
 
 
-        // GET: api/Service
+        // GET: api/store
         [HttpGet]
         public IActionResult GetAllStores()
         {
             try
             {
-                var store = _storeService.GetStores();
-                List<StoreViewModel> storeVmList = store.Select(x => new StoreViewModel
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    Name = x.Name,
-                    Email = x.Email,
-                    Mobile = x.Mobile,
-                    RegistrationNumber = x.RegistrationNumber,
-                    Address = x.Address,
-                    CreatedAt = x.CreatedAt
-                   
-                }).ToList();
-                return Ok(storeVmList);
+                return Ok(_storeRepository.GetAll());
             }
             catch (Exception)
             {
+
                 throw;
             }
         }
 
 
 
-        // GET: api/Service/1
+        // GET: api/store/1
         [HttpGet("{id}")]
         public IActionResult GetStore(int id)
         {
+            if (id !> 0)
+                return BadRequest();
             try
             {
-                var store = _storeService.GetStore(id);
+                var store = _storeRepository.Get(id);
                 if (store == null)
-                {
                     return NotFound();
-                }
-                StoreViewModel model = new StoreViewModel()
-                {
-                    Id = store.Id,
-                    Code = store.Code,
-                    Name = store.Name,
-                    Email = store.Email,
-                    Mobile = store.Mobile,
-                    RegistrationNumber = store.RegistrationNumber,
-                    Address = store.Address,
-                    CreatedAt = store.CreatedAt
-                };
-                return Ok(model);
+                return Ok(store);
             }
             catch (Exception)
             {
 
                 throw;
             }
+               
         }
 
 
 
-        // Post: api/Service
+        // Post: api/store
         [HttpPost]
-        public IActionResult PostStore(StoreViewModel model)
+        public IActionResult PostStore(Store model)
         {
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                return BadRequest(model);
+                try
+                {
+                    _storeRepository.Update(model);
+                    return Ok();
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
             }
-            Store store = new Store
-            {
-                Code = model.Code,
-                Name = model.Name,
-                Email = model.Email,
-                Mobile = model.Email,
-                RegistrationNumber = model.RegistrationNumber,
-                Address = model.Address,
-                CreatedAt = DateTime.UtcNow
-            };
-            try
-            {
-                _storeService.InsertStore(store);
-                return Ok();
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
+            return BadRequest(model);
         }
 
 
 
-        // PUT: api/Service/5
+        // PUT: api/store/5
         [HttpPut("{id}")]
-        public IActionResult PutStore(int id, StoreViewModel model)
+        public IActionResult PutStore(int id, Store model)
         {
             if (id != model.Id)
             {
                 return BadRequest(model);
             }
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                return BadRequest(model);
-            }
+                Store store = new Store()
+                {
+                    Id = model.Id,
+                    Code = model.Code,
+                    Name = model.Name,
+                    Email = model.Email,
+                    Mobile = model.Email,
+                    RegistrationNumber = model.RegistrationNumber,
+                    Address = model.Address,
+                    CreatedAt = model.CreatedAt,
+                    IsActive = model.IsActive
+                };
 
-            Store store = new Store()
-            {
-                Id = model.Id,
-                Code = model.Code,
-                Name = model.Name,
-                Email = model.Email,
-                Mobile = model.Email,
-                RegistrationNumber = model.RegistrationNumber,
-                Address = model.Address,
-                CreatedAt = model.CreatedAt
-            };
+                try
+                {
+                    _storeRepository.Update(store);
+                    return Ok();
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+            return BadRequest(model);
 
-            try
-            {
-                _storeService.UpdateStore(store);
-                return Ok();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
         }
 
 
 
-        // Delete: api/Service/5
+        // Delete: api/store/5
         [HttpDelete("{id}")]
         public IActionResult DeleteStore(int id)
         {
-            if (id <= 0)
+            if (id !> 0)
             {
                 return BadRequest();
             }
-            var store = _storeService.GetStore(id);
-            if (store == null)
-            {
-                return NotFound();
-            }
+
             try
             {
-                store.IsDeleted = true;
-                _storeService.SoftDeleteStore(store);
+                var store = _storeRepository.Get(id);
+                if (store == null)
+                {
+                    return NotFound();
+                }
+                _storeRepository.Delete(store);
                 return NoContent();
             }
             catch (Exception)
@@ -182,24 +149,25 @@ namespace WebApi.Controllers
 
 
 
-        //// Delete: api/Service/5
-        //[HttpDelete("{id}")]
-        //public IActionResult DeleteService(int id)
-        //{
-        //    var Service = storeService.GetService(id);
-        //    if (Service == null)
-        //    {
-        //        return BadRequest();
-        //    }
-        //    try
-        //    {
-        //        storeService.DeleteService(id);
-        //        return NoContent();
-        //    }
-        //    catch (Exception)
-        //    {
-        //        throw;
-        //    }
-        //}
+        // Delete: api/store/5
+        [HttpDelete("{id}")]
+        public IActionResult ChangeStatus(int id)
+        {
+            var store = _storeRepository.Get(id);
+            if (store == null)
+            {
+                return BadRequest();
+            }
+            try
+            {
+                if(store.IsActive==true? store.IsActive=false : store.IsActive = true)
+                _storeRepository.Update(store);
+                return NoContent();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
     }
 }
